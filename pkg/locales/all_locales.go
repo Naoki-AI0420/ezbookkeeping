@@ -1,7 +1,7 @@
 package locales
 
 // DefaultLanguage represents the default language
-var DefaultLanguage = en
+var DefaultLanguage = ja
 
 // AllLanguages represents all the supported language
 // To add new languages, please refer to https://ezbookkeeping.mayswind.net/translating
