@@ -48,6 +48,8 @@ RUN mkdir -p /ezbookkeeping && chown 1000:1000 /ezbookkeeping \
 WORKDIR /ezbookkeeping
 COPY --from=be-builder --chown=1000:1000 /go/src/github.com/mayswind/ezbookkeeping/ezbookkeeping /ezbookkeeping/ezbookkeeping
 COPY --from=fe-builder --chown=1000:1000 /go/src/github.com/mayswind/ezbookkeeping/dist /ezbookkeeping/public
+COPY --chown=1000:1000 public/lp.html /ezbookkeeping/public/lp.html
+COPY --chown=1000:1000 public/lp /ezbookkeeping/public/lp
 COPY --chown=1000:1000 conf /ezbookkeeping/conf
 COPY --chown=1000:1000 templates /ezbookkeeping/templates
 COPY --chown=1000:1000 LICENSE /ezbookkeeping/LICENSE

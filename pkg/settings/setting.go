@@ -445,6 +445,17 @@ type Config struct {
 	ExchangeRatesRequestTimeoutExceedDefaultValue bool
 	ExchangeRatesProxy                            string
 	ExchangeRatesSkipTLSVerify                    bool
+
+	// Stripe
+	EnableStripe              bool
+	StripeAPIKey              string
+	StripeWebhookSecret       string
+	StripeProMonthlyPriceID   string
+	StripeProYearlyPriceID    string
+	StripeBizMonthlyPriceID   string
+	StripeBizYearlyPriceID    string
+	StripeCheckoutSuccessURL  string
+	StripeCheckoutCancelURL   string
 }
 
 // LoadConfiguration loads setting config from given config file path
@@ -581,6 +592,12 @@ func LoadConfiguration(configFilePath string) (*Config, error) {
 	}
 
 	err = loadExchangeRatesConfiguration(config, cfgFile, "exchange_rates")
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = loadStripeConfiguration(config, cfgFile, "stripe")
 
 	if err != nil {
 		return nil, err
@@ -1457,4 +1474,31 @@ func getLogLevel(logLevelStr string) (Level, error) {
 	}
 
 	return "", errs.ErrInvalidLogLevel
+}
+
+func loadStripeConfiguration(config *Config, configFile *ini.File, sectionName string) error {
+	config.EnableStripe = getConfigItemBoolValue(configFile, sectionName, "enable_stripe", false)
+
+	if !config.EnableStripe {
+		return nil
+	}
+
+	config.StripeAPIKey = getConfigItemStringValue(configFile, sectionName, "api_key")
+	config.StripeWebhookSecret = getConfigItemStringValue(configFile, sectionName, "webhook_secret")
+	config.StripeProMonthlyPriceID = getConfigItemStringValue(configFile, sectionName, "pro_monthly_price_id")
+	config.StripeProYearlyPriceID = getConfigItemStringValue(configFile, sectionName, "pro_yearly_price_id")
+	config.StripeBizMonthlyPriceID = getConfigItemStringValue(configFile, sectionName, "business_monthly_price_id")
+	config.StripeBizYearlyPriceID = getConfigItemStringValue(configFile, sectionName, "business_yearly_price_id")
+	config.StripeCheckoutSuccessURL = getConfigItemStringValue(configFile, sectionName, "success_url")
+	config.StripeCheckoutCancelURL = getConfigItemStringValue(configFile, sectionName, "cancel_url")
+
+	if config.StripeCheckoutSuccessURL == "" {
+		config.StripeCheckoutSuccessURL = config.RootUrl + "desktop/#/subscription?status=success"
+	}
+
+	if config.StripeCheckoutCancelURL == "" {
+		config.StripeCheckoutCancelURL = config.RootUrl + "desktop/#/subscription?status=canceled"
+	}
+
+	return nil
 }

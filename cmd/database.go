@@ -173,5 +173,13 @@ func updateAllDatabaseTablesStructure(c *core.CliContext) error {
 
 	log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] insights explorer table maintained successfully")
 
+	err = datastore.Container.UserStore.SyncStructs(new(models.UserSubscription))
+
+	if err != nil {
+		return err
+	}
+
+	log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] user subscription table maintained successfully")
+
 	return nil
 }

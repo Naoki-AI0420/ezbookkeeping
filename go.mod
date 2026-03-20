@@ -20,6 +20,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pquerna/otp v1.5.0
 	github.com/sirupsen/logrus v1.9.4
+	github.com/stripe/stripe-go/v82 v82.1.0
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v3 v3.6.2
 	github.com/wk8/go-ordered-map/v2 v2.1.8

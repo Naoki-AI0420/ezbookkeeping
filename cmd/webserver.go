@@ -22,6 +22,7 @@ import (
 	"github.com/mayswind/ezbookkeeping/pkg/log"
 	"github.com/mayswind/ezbookkeeping/pkg/mcp"
 	"github.com/mayswind/ezbookkeeping/pkg/middlewares"
+	"github.com/mayswind/ezbookkeeping/pkg/payment"
 	"github.com/mayswind/ezbookkeeping/pkg/requestid"
 	"github.com/mayswind/ezbookkeeping/pkg/settings"
 	"github.com/mayswind/ezbookkeeping/pkg/utils"
@@ -78,6 +79,11 @@ func startWebServer(c *core.CliContext) error {
 	if err != nil {
 		log.BootErrorf(c, "[webserver.startWebServer] initializes oauth 2.0 provider failed, because %s", err.Error())
 		return err
+	}
+
+	if config.EnableStripe {
+		payment.InitStripe(config)
+		log.BootInfof(c, "[webserver.startWebServer] stripe payment initialized")
 	}
 
 	err = cron.InitializeCronJobSchedulerContainer(c, config, true)
@@ -158,6 +164,10 @@ func startWebServer(c *core.CliContext) error {
 	for i := 0; i < len(workboxFileNames); i++ {
 		router.StaticFile("/mobile/"+workboxFileNames[i], filepath.Join(config.StaticRootPath, workboxFileNames[i]))
 	}
+
+	router.StaticFile("/lp", filepath.Join(config.StaticRootPath, "lp.html"))
+	router.Static("/lp/css", filepath.Join(config.StaticRootPath, "lp/css"))
+	router.Static("/lp/img", filepath.Join(config.StaticRootPath, "lp/img"))
 
 	router.StaticFile("/desktop", filepath.Join(config.StaticRootPath, "desktop.html"))
 	router.Static("/desktop/js", filepath.Join(config.StaticRootPath, "js"))
@@ -259,6 +269,16 @@ func startWebServer(c *core.CliContext) error {
 		{
 			oauth2Route.GET("/login", bindRedirect(api.OAuth2Authentications.LoginHandler))
 			oauth2Route.GET("/callback", bindRedirect(api.OAuth2Authentications.CallbackHandler))
+		}
+	}
+
+	// Stripe Webhook (no JWT, uses Stripe signature verification)
+	if config.EnableStripe {
+		stripeRoute := router.Group("/api/stripe")
+		stripeRoute.Use(bindMiddleware(middlewares.RequestId(config)))
+		stripeRoute.Use(bindMiddleware(middlewares.RequestLog))
+		{
+			stripeRoute.POST("/webhook", bindApi(api.Subscriptions.SubscriptionWebhookHandler))
 		}
 	}
 
@@ -466,6 +486,13 @@ func startWebServer(c *core.CliContext) error {
 			apiV1Route.GET("/exchange_rates/latest.json", bindApi(api.ExchangeRates.LatestExchangeRateHandler))
 			apiV1Route.POST("/exchange_rates/user_custom/update.json", bindApi(api.ExchangeRates.UserCustomExchangeRateUpdateHandler))
 			apiV1Route.POST("/exchange_rates/user_custom/delete.json", bindApi(api.ExchangeRates.UserCustomExchangeRateDeleteHandler))
+
+			// Subscriptions
+			if config.EnableStripe {
+				apiV1Route.POST("/subscription/checkout.json", bindApi(api.Subscriptions.SubscriptionCheckoutHandler))
+				apiV1Route.GET("/subscription/status.json", bindApi(api.Subscriptions.SubscriptionStatusHandler))
+				apiV1Route.POST("/subscription/portal.json", bindApi(api.Subscriptions.SubscriptionPortalHandler))
+			}
 
 			// System
 			apiV1Route.GET("/systems/version.json", bindApi(api.Systems.VersionHandler))
